@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlserve"
+version = "1.0.0"
+description = "Production-shaped FastAPI service for a scikit-learn model: validation, versioning, metrics, structured logs and Docker."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Umer Hashmi" }]
+requires-python = ">=3.10"
+dependencies = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "pydantic>=2.6",
+                "scikit-learn>=1.3", "numpy>=1.26", "joblib>=1.3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27"]
+
+[project.scripts]
+mlserve = "mlserve.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100

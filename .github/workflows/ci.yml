@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest -q
+      - name: Smoke test the running service
+        run: |
+          mlserve train --version ci.smoke
+          uvicorn mlserve.app:app --port 8000 &
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && break || sleep 1; done
+          curl -sf -X POST localhost:8000/predict -H 'content-type: application/json' \
+            -d '{"features":[13.2,1.78,2.14,11.2,100,2.65,2.76,0.26,1.28,4.38,1.05,3.4,1050]}' | tee /dev/stderr | grep -q '"label"'
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t mlserve:ci .
+      - name: Run the container and call it
+        run: |
+          docker run -d -p 8000:8000 --name mlserve mlserve:ci
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && break || sleep 1; done
+          curl -sf localhost:8000/model | grep -q '"features"'
+          docker logs mlserve

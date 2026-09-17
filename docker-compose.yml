@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MLSERVE_LOG_LEVEL: INFO
+    volumes:
+      # mount locally trained versions over the one baked into the image
+      - ./models:/app/models:ro
+    restart: unless-stopped
