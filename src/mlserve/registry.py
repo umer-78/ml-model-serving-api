@@ -46,7 +46,10 @@ class ModelBundle:
             raise ValueError(f"expected {len(self.features)} features, got {matrix.shape[-1]}")
         probabilities = self.pipeline.predict_proba(matrix)
         labels = [self.classes[int(i)] for i in probabilities.argmax(axis=1)]
-        spread = [{c: float(round(p, 6)) for c, p in zip(self.classes, row)} for row in probabilities]
+        # strict: one probability per class. A row of the wrong width means the
+        # loaded model does not match the class list recorded beside it.
+        spread = [{c: float(round(p, 6)) for c, p in zip(self.classes, row, strict=True)}
+                  for row in probabilities]
         return labels, spread
 
 

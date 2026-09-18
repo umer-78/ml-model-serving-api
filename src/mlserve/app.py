@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from .metrics import metrics
 from .registry import InvalidBundle, ModelNotFound, ModelRegistry
-from .schemas import BatchRequest, BatchResponse, PredictRequest, PredictResponse, Prediction
+from .schemas import BatchRequest, BatchResponse, Prediction, PredictRequest, PredictResponse
 
 MODELS_DIR = Path(os.environ.get("MLSERVE_MODELS", Path(__file__).resolve().parents[2] / "models"))
 logger = logging.getLogger("mlserve")
@@ -120,7 +120,7 @@ def create_app(models_dir: Path | None = None) -> FastAPI:
             metrics.observe("/predict/batch", elapsed / len(labels), label=label)
         return BatchResponse(
             predictions=[Prediction(label=lab, confidence=max(p.values()), probabilities=p)
-                         for lab, p in zip(labels, probabilities)],
+                         for lab, p in zip(labels, probabilities, strict=True)],
             model_version=bundle.version, latency_ms=round(elapsed, 3), count=len(labels),
         )
 

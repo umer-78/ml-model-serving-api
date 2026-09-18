@@ -67,6 +67,7 @@ def _run(argv: list[str] | None = None) -> int:
         return 0
 
     import uvicorn
+
     from .app import create_app
 
     uvicorn.run(create_app(args.models), host=args.host, port=args.port, reload=args.reload)
