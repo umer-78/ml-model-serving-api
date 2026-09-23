@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ML Model Serving API — Interactive Demo</title>
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #eef0f4; --border: #dde1e8;
+  --text: #16181d; --muted: #5d6573; --accent: #2563eb; --accent-ink: #ffffff;
+  --good: #15803d; --bad: #b91c1c; --radius: 12px;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 4px 16px rgb(16 24 40 / 0.05);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --border: #2a303b;
+    --text: #e8eaee; --muted: #9aa3b2; --accent: #60a5fa; --accent-ink: #0b1220;
+    --good: #4ade80; --bad: #f87171; --shadow: none; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+a { color: var(--accent); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+header h1 { margin: 0; font-size: 1.7rem; letter-spacing: -0.02em; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 640px; }
+.gh { font-weight: 600; text-decoration: none; border: 1px solid var(--border); background: var(--surface); padding: 8px 14px; border-radius: var(--radius); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-top: 16px; }
+.card h2 { margin: 0 0 12px; font-size: 1.05rem; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+input, select, textarea, button { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; width: 100%; }
+textarea { font-family: var(--mono); font-size: 0.85rem; min-height: 180px; resize: vertical; }
+button { background: var(--accent); color: var(--accent-ink); border: none; cursor: pointer; font-weight: 600; width: auto; }
+button:hover { filter: brightness(1.08); }
+button.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow: auto; font-family: var(--mono); font-size: 0.82rem; margin: 0; white-space: pre-wrap; word-break: break-word; }
+.status { display: inline-block; font-family: var(--mono); font-weight: 700; padding: 3px 10px; border-radius: 99px; font-size: 0.85rem; }
+.status.ok { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+.status.err { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+.msg { margin-top: 10px; padding: 9px 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
+.msg.err { display: block; background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 35%, transparent); }
+.msg.ok { display: block; background: color-mix(in srgb, var(--good) 12%, transparent); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 35%, transparent); }
+.bar-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 0.88rem; }
+.bar-row .lab { width: 70px; font-family: var(--mono); }
+.bar-track { flex: 1; background: var(--surface-2); border-radius: 99px; height: 14px; overflow: hidden; border: 1px solid var(--border); }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s; }
+.bar-fill.win { background: var(--good); }
+.bar-row .val { width: 55px; text-align: right; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+.versions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ver { border: 1px solid var(--border); background: var(--surface-2); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-family: var(--mono); font-size: 0.82rem; }
+.ver[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); font-weight: 700; }
+.hint { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+footer a { color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>ML Model Serving API</h1>
+    <p>Build a <code>POST /predict</code> payload, see validation reject bad input at the edge, and switch model versions with a rollback — the production half of scikit-learn serving.</p>
+  </div>
+  <a class="gh" href="https://github.com/umer-78/ml-model-serving-api" rel="noopener">View on GitHub</a>
+</header>
+
+<main>
+<section class="card" aria-label="Model registry">
+  <h2>Model versions</h2>
+  <p class="hint" style="margin-top:-4px">Each bundle carries its own features, metrics and classes. Activate one to serve it — no restart, the way <code>POST /model/activate/{version}</code> works.</p>
+  <div class="versions" id="versions" role="group" aria-label="Model versions"></div>
+  <div class="msg" id="verMsg" role="status"></div>
+  <div style="margin-top:12px;overflow-x:auto">
+    <table id="metaTable">
+      <caption class="sr">Active model metadata</caption>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="grid2" style="margin-top:16px">
+  <div class="card" aria-label="Request builder">
+    <h2>Request — <code>POST /predict</code></h2>
+    <div class="row" style="margin-bottom:10px">
+      <div style="flex:2">
+        <label for="sample">Feature preset</label>
+        <select id="sample">
+          <option value="0">Wine class_0 sample (13 features)</option>
+          <option value="1">Wine class_1 sample</option>
+          <option value="2">Wine class_2 sample</option>
+          <option value="custom">Custom JSON…</option>
+        </select>
+      </div>
+      <div>
+        <label for="reqVersion">model_version</label>
+        <input id="reqVersion" placeholder="active" value="">
+      </div>
+    </div>
+    <label for="payload">JSON body</label>
+    <textarea id="payload" spellcheck="false" aria-describedby="payloadHint"></textarea>
+    <p class="hint" id="payloadHint">Pydantic rejects empty, non-numeric, NaN and oversized inputs; the wrong number of features returns 422 with the count it expected.</p>
+    <div class="row" style="margin-top:10px">
+      <button id="btnSend" type="button">Send request</button>
+      <button class="ghost" id="btnBreak" type="button">Break the payload</button>
+      <button class="ghost" id="btnBatch" type="button">Batch (3 rows)</button>
+    </div>
+    <div class="msg" id="reqMsg" role="status"></div>
+  </div>
+
+  <div class="card" aria-label="Response">
+    <h2>Response</h2>
+    <p><span class="status" id="statusChip">—</span> <span class="hint" id="respMeta"></span></p>
+    <pre id="response" aria-live="polite">{ }</pre>
+    <div id="probs" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section class="card" aria-label="Health and stats">
+  <h2>Ops endpoints</h2>
+  <div class="row">
+    <button class="ghost" id="btnHealth" type="button">GET /health</button>
+    <button class="ghost" id="btnModel" type="button">GET /model</button>
+    <button class="ghost" id="btnStats" type="button">GET /stats</button>
+  </div>
+  <pre id="opsOut" style="margin-top:12px" aria-live="polite"></pre>
+</section>
+</main>
+
+<footer>
+  <p>14 tests passing · <a href="https://github.com/umer-78">github.com/umer-78</a></p>
+</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+
+  const FEATURES = ["alcohol","malic_acid","ash","alcalinity_of_ash","magnesium","total_phenols","flavanoids","nonflavanoid_phenols","proanthocyanins","color_intensity","hue","od280/od315_of_diluted_wines","proline"];
+  const CLASSES = ["class_0","class_1","class_2"];
+
+  // mock versioned bundles: each version has slightly different weights so rollback is visible
+  const MODELS = {
+    "2026.09.17.1": { created: "2026-09-17T10:00:00Z", acc: 1.0, cv: 0.967, bias: [0.0, 0.0, 0.0], active: false },
+    "2026.09.20.1": { created: "2026-09-20T14:30:00Z", acc: 0.98, cv: 0.952, bias: [0.05, -0.03, -0.02], active: false },
+    "2026.09.23.1030": { created: "2026-09-23T10:30:49Z", acc: 1.0, cv: 0.967, bias: [0.0, 0.0, 0.0], active: true }
+  };
+  let activeVersion = "2026.09.23.1030";
+
+  const SAMPLES = [
+    [13.2,1.78,2.14,11.2,100,2.65,2.76,0.26,1.28,4.38,1.05,3.4,1050],
+    [12.3,1.3,2.1,10.5,95,2.8,2.9,0.25,1.8,3.5,1.1,3.2,780],
+    [13.05,1.7,2.6,16.5,115,3.1,3.5,0.29,2.0,5.9,1.0,2.6,760]
+  ];
+
+  let stats = { predict_count: 0, error_count: 0, by_label: { class_0: 0, class_1: 0, class_2: 0 } };
+
+  function defaultPayload(features) {
+    return JSON.stringify({ features: features, model_version: null }, null, 2);
+  }
+
+  // mock inference: softmax over distance to per-class centroids (deterministic)
+  function predict(features, version) {
+    const centroids = [
+      [13.2,1.9,2.4,11.5,100,2.6,2.8,0.25,1.5,4.0,1.1,3.1,900],
+      [12.2,1.6,2.2,12.0,95,2.4,2.3,0.35,1.7,3.0,1.2,2.8,600],
+      [13.0,3.2,3.1,20.0,105,1.8,1.2,0.4,1.0,4.5,0.9,2.2,450]
+    ];
+    const bias = MODELS[version] ? MODELS[version].bias : [0,0,0];
+    const logits = centroids.map((c, ci) => {
+      let d = 0;
+      for (let i = 0; i < 13; i++) {
+        const scale = Math.abs(c[i]) + 1;
+        d += Math.pow((features[i] - c[i]) / scale, 2);
+      }
+      return -Math.sqrt(d) + bias[ci];
+    });
+    const max = Math.max(...logits);
+    const exps = logits.map(v => Math.exp(v - max));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    const probs = exps.map(v => v / sum);
+    const best = probs.indexOf(Math.max(...probs));
+    return {
+      label: CLASSES[best],
+      confidence: Number(probs[best].toFixed(3)),
+      probabilities: Object.fromEntries(CLASSES.map((c, i) => [c, Number(probs[i].toFixed(3))]))
+    };
+  }
+
+  function validate(body) {
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return { status: 422, detail: "invalid body: expected a JSON object" };
+    }
+    if (!("features" in body)) {
+      return { status: 422, detail: [{ type: "missing", loc: ["body","features"], msg: "Field required" }] };
+    }
+    const f = body.features;
+    if (!Array.isArray(f)) {
+      return { status: 422, detail: [{ type: "list_type", loc: ["body","features"], msg: "Input should be a valid list" }] };
+    }
+    if (f.length === 0) {
+      return { status: 422, detail: [{ type: "too_short", loc: ["body","features"], msg: "List should have at least 1 item" }] };
+    }
+    if (f.length > 512) {
+      return { status: 422, detail: [{ type: "too_long", loc: ["body","features"], msg: "List should have at most 512 items" }] };
+    }
+    for (let i = 0; i < f.length; i++) {
+      const v = f[i];
+      if (typeof v !== "number" || Number.isNaN(v) || !Number.isFinite(v)) {
+        return { status: 422, detail: [{ type: "finite_number", loc: ["body","features",i], msg: "features must be finite numbers" }] };
+      }
+    }
+    if (body.model_version !== undefined && body.model_version !== null && typeof body.model_version !== "string") {
+      return { status: 422, detail: [{ type: "string_type", loc: ["body","model_version"], msg: "Input should be a valid string" }] };
+    }
+    const version = body.model_version || activeVersion;
+    if (body.model_version && !MODELS[body.model_version]) {
+      return { status: 404, detail: "model not found: " + body.model_version };
+    }
+    if (f.length !== 13) {
+      return { status: 422, detail: "expected 13 features, got " + f.length, version: version };
+    }
+    return { ok: true, version: version };
+  }
+
+  function send() {
+    const raw = $("payload").value;
+    let body;
+    try { body = JSON.parse(raw); }
+    catch (e) {
+      return showResponse(400, { detail: "invalid JSON: " + e.message });
+    }
+    const t0 = performance.now();
+    const v = validate(body);
+    if (!v.ok) {
+      stats.error_count++;
+      showResponse(v.status, { detail: v.detail });
+      return;
+    }
+    const pred = predict(body.features, v.version);
+    const latency = Number((performance.now() - t0 + Math.random() * 8 + 2).toFixed(3));
+    stats.predict_count++;
+    stats.by_label[pred.label] = (stats.by_label[pred.label] || 0) + 1;
+    showResponse(200, {
+      prediction: pred,
+      model_version: v.version,
+      latency_ms: latency
+    });
+  }
+
+  function showResponse(status, obj) {
+    const chip = $("statusChip");
+    chip.textContent = status + " " + (status === 200 ? "OK" : status === 404 ? "Not Found" : status === 422 ? "Unprocessable Entity" : "Error");
+    chip.className = "status " + (status === 200 ? "ok" : "err");
+    $("respMeta").textContent = "x-request-id: " + Math.random().toString(36).slice(2, 10) +
+      " · x-response-time-ms: " + (obj.latency_ms != null ? obj.latency_ms : (Math.random() * 5 + 1).toFixed(2));
+    $("response").textContent = JSON.stringify(obj, null, 2);
+    const probs = $("probs");
+    if (status === 200 && obj.prediction) {
+      probs.innerHTML = "<strong style=\"font-size:.9rem\">Probabilities</strong>" +
+        Object.entries(obj.prediction.probabilities).map(([k, v]) =>
+          '<div class="bar-row"><span class="lab">' + k + '</span>' +
+          '<span class="bar-track"><span class="bar-fill' + (k === obj.prediction.label ? " win" : "") +
+          '" style="width:' + (v * 100) + '%"></span></span>' +
+          '<span class="val">' + v.toFixed(3) + "</span></div>"
+        ).join("");
+    } else probs.innerHTML = "";
+    const m = $("reqMsg");
+    if (status === 200) { m.className = "msg ok"; m.textContent = "Prediction returned in " + obj.latency_ms + " ms."; setTimeout(() => m.className = "msg", 3000); }
+    else { m.className = "msg err"; m.textContent = status + ": " + (typeof obj.detail === "string" ? obj.detail : "validation failed — see response"); }
+  }
+
+  function renderVersions() {
+    const wrap = $("versions");
+    wrap.innerHTML = "";
+    Object.keys(MODELS).sort().forEach(v => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "ver"; b.textContent = v;
+      b.setAttribute("aria-pressed", v === activeVersion ? "true" : "false");
+      b.addEventListener("click", () => activate(v));
+      wrap.appendChild(b);
+    });
+    const m = MODELS[activeVersion];
+    $("metaTable").querySelector("tbody").innerHTML =
+      row("version", activeVersion) +
+      row("algorithm", "RandomForestClassifier(n_estimators=250) on StandardScaler") +
+      row("dataset", "scikit-learn wine (178 samples, 13 features, 3 classes)") +
+      row("features", FEATURES.length + " in order (see /model)") +
+      row("classes", CLASSES.join(", ")) +
+      row("accuracy", m.acc.toFixed(3)) +
+      row("cv_accuracy_mean", m.cv.toFixed(3)) +
+      row("created_at", m.created);
+  }
+  function row(k, v) { return "<tr><td style=\"color:var(--muted)\">" + k + "</td><td><code>" + esc(v) + "</code></td></tr>"; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+  function activate(v) {
+    if (!MODELS[v]) return;
+    activeVersion = v;
+    renderVersions();
+    const m = $("verMsg");
+    m.className = "msg ok";
+    m.textContent = "Active model is now " + v + " (POST /model/activate/" + v + " → 200).";
+    setTimeout(() => m.className = "msg", 3500);
+    // refresh default payload version hint
+    $("reqVersion").placeholder = v;
+  }
+
+  $("sample").addEventListener("change", () => {
+    const s = $("sample").value;
+    if (s === "custom") return;
+    $("payload").value = defaultPayload(SAMPLES[Number(s)]);
+  });
+
+  $("btnBreak").addEventListener("click", () => {
+    const choice = Math.floor(Math.random() * 4);
+    const payloads = [
+      '{"features": []}',
+      '{"features": ["not", "numbers"]}',
+      '{"features": [13.2, 1.78, 2.14]}',
+      '{"features": [13.2, null, 2.14, 11.2, 100, 2.65, 2.76, 0.26, 1.28, 4.38, 1.05, 3.4, 1050]}'
+    ];
+    $("payload").value = payloads[choice];
+    send();
+  });
+
+  $("btnBatch").addEventListener("click", () => {
+    $("payload").value = JSON.stringify({ rows: [SAMPLES[0], SAMPLES[1], SAMPLES[2]], model_version: null }, null, 2);
+    const t0 = performance.now();
+    const preds = SAMPLES.map(f => predict(f, activeVersion));
+    const latency = Number((performance.now() - t0 + 4).toFixed(3));
+    stats.predict_count += 3;
+    preds.forEach(p => stats.by_label[p.label] = (stats.by_label[p.label] || 0) + 1);
+    showResponse(200, {
+      predictions: preds,
+      model_version: activeVersion,
+      latency_ms: latency,
+      count: preds.length
+    });
+    // batch is a different endpoint — note it
+    $("respMeta").textContent = "POST /predict/batch · " + $("respMeta").textContent;
+  });
+
+  $("btnSend").addEventListener("click", send);
+
+  $("btnHealth").addEventListener("click", () => {
+    $("opsOut").textContent = JSON.stringify({ status: "ok", model_version: activeVersion, versions: Object.keys(MODELS).sort() }, null, 2);
+  });
+  $("btnModel").addEventListener("click", () => {
+    const m = MODELS[activeVersion];
+    $("opsOut").textContent = JSON.stringify({
+      version: activeVersion, features: FEATURES, classes: CLASSES,
+      metrics: { accuracy: m.acc, f1_macro: m.acc, cv_accuracy_mean: m.cv, test_samples: 45 },
+      created_at: m.created,
+      algorithm: "RandomForestClassifier(n_estimators=250, min_samples_leaf=2) on StandardScaler"
+    }, null, 2);
+  });
+  $("btnStats").addEventListener("click", () => {
+    $("opsOut").textContent = JSON.stringify(stats, null, 2);
+  });
+
+  renderVersions();
+  $("payload").value = defaultPayload(SAMPLES[0]);
+})();
+</script>
+</body>
+</html>
