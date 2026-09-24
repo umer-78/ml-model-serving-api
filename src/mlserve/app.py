@@ -65,6 +65,12 @@ def create_app(models_dir: Path | None = None) -> FastAPI:
             metrics.record_error("invalid_bundle")
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    @app.get("/", include_in_schema=False)
+    def root():
+        from fastapi.responses import RedirectResponse
+
+        return RedirectResponse("/docs")
+
     @app.get("/health", tags=["ops"])
     def health() -> dict:
         try:

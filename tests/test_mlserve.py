@@ -151,3 +151,9 @@ def test_cli_train_and_versions(tmp_path, capsys):
     assert main(["versions", "--models", str(tmp_path)]) == 0
     assert "accuracy" in capsys.readouterr().out
     assert main(["versions", "--models", str(tmp_path / "empty")]) == 1
+
+
+def test_root_redirects_to_the_docs(client):
+    home = client.get("/", follow_redirects=False)
+    assert home.status_code == 307
+    assert home.headers["location"] == "/docs"
