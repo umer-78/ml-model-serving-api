@@ -101,7 +101,7 @@ at your own data and the rest of the service is unchanged.
 
 ```bash
 ruff check .
-python -m pytest -q     # 14 tests
+python -m pytest -q     # 15 tests
 ```
 
 They cover the bundle written at training time, the registry (listing, loading,
