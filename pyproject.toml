@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mlserve"
+name = "ml-model-serving-api"
 version = "1.0.0"
-description = "Production-shaped FastAPI service for a scikit-learn model: validation, versioning, metrics, structured logs and Docker."
+description = "Production-shaped FastAPI service for a scikit-learn model: validation, model versioning and rollback, Prometheus metrics, JSON logs and a non-root Docker image."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Umer Hashmi" }]
