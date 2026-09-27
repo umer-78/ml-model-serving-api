@@ -3,6 +3,8 @@
 **Live demo:** https://umer-78.github.io/ml-model-serving-api/
 
 [![CI](https://github.com/umer-78/ml-model-serving-api/actions/workflows/ci.yml/badge.svg)](https://github.com/umer-78/ml-model-serving-api/actions/workflows/ci.yml)
+
+[![ML Model Serving API: the live demo](.github/preview.jpg)](https://umer-78.github.io/ml-model-serving-api/)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688)
 ![Docker](https://img.shields.io/badge/docker-ready-2496ed)
